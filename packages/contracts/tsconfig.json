@@ -1,0 +1,4 @@
+{
+  "extends": "@focusguard/config/tsconfig/library.json",
+  "include": ["src"]
+}

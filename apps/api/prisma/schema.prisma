@@ -1,0 +1,13 @@
+// FocusGuard database schema. PostgreSQL is the single source of truth (ADR-003).
+// Custom SQL (exclusion constraints, partitions) lives in hand-edited migrations.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [btree_gist, citext]
+}

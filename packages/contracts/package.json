@@ -1,0 +1,23 @@
+{
+  "name": "@focusguard/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./openapi": "./src/openapi.ts"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@focusguard/config": "workspace:*",
+    "vitest": "^3.2.4"
+  }
+}

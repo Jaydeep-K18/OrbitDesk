@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+/* Dark mode is class-based so the user's explicit choice wins over the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens (ROADMAP Phase 0). Semantic colors are CSS variables so light/dark
+ * themes swap values without touching components. Spacing follows Tailwind's 4px scale.
+ */
+:root {
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.21 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 265);
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.5 0.02 260);
+  --border: oklch(0.91 0.008 255);
+  --input: oklch(0.91 0.008 255);
+  --primary: oklch(0.51 0.23 277);
+  --primary-foreground: oklch(0.99 0 0);
+  --accent: oklch(0.95 0.02 277);
+  --accent-foreground: oklch(0.35 0.15 277);
+  --ring: oklch(0.6 0.2 277);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Activity classification palette (consistent across report, timeline, charts). */
+  --label-planned: oklch(0.6 0.15 155);
+  --label-relevant: oklch(0.68 0.13 200);
+  --label-distraction: oklch(0.63 0.2 30);
+  --label-blocked: oklch(0.45 0.2 20);
+  --label-uncertain: oklch(0.72 0.03 260);
+  --label-outside: oklch(0.88 0.01 260);
+}
+
+.dark {
+  --background: oklch(0.17 0.015 265);
+  --foreground: oklch(0.95 0.005 255);
+  --card: oklch(0.21 0.018 265);
+  --card-foreground: oklch(0.95 0.005 255);
+  --muted: oklch(0.26 0.02 265);
+  --muted-foreground: oklch(0.7 0.02 260);
+  --border: oklch(0.3 0.02 265);
+  --input: oklch(0.32 0.02 265);
+  --primary: oklch(0.66 0.19 277);
+  --primary-foreground: oklch(0.15 0.02 265);
+  --accent: oklch(0.3 0.06 277);
+  --accent-foreground: oklch(0.92 0.04 277);
+  --ring: oklch(0.66 0.19 277);
+  --destructive: oklch(0.65 0.2 27);
+  --label-outside: oklch(0.35 0.01 260);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-planned: var(--label-planned);
+  --color-relevant: var(--label-relevant);
+  --color-distraction: var(--label-distraction);
+  --color-blocked: var(--label-blocked);
+  --color-uncertain: var(--label-uncertain);
+  --color-outside: var(--label-outside);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

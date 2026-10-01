@@ -1,0 +1,50 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.output/
+.wxt/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!apps/extension/keys/*.pub
+
+# local data
+.data/
+*.log
+logs/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+mlruns/
+apps/ml-service/models/*.joblib
+
+# c++
+apps/collector/build/
+apps/collector/out/
+
+# editors / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# playwright
+test-results/
+playwright-report/
