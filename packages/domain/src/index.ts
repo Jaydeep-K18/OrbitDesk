@@ -1,4 +1,10 @@
 export * from './domains.js';
 export * from './clock.js';
 export * from './ids.js';
+export * from './time.js';
+export * from './sessions.js';
+export * from './privacy.js';
+export * from './classification.js';
+export * from './metrics.js';
+export * from './daily.js';
 export type * from './seams.js';

@@ -1,5 +1,6 @@
 // FocusGuard database schema. PostgreSQL is the single source of truth (ADR-003).
 // Custom SQL (exclusion constraints, partitions) lives in hand-edited migrations.
+// IDs are UUIDv7 (time-sortable). All timestamps are timestamptz (UTC).
 
 generator client {
   provider        = "prisma-client-js"
@@ -10,4 +11,459 @@ datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
   extensions = [btree_gist, citext]
+}
+
+enum TaskCategory {
+  coding_practice
+  study
+  project_dev
+  writing
+  research
+  other
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum DomainListType {
+  blocked
+  relevant
+  never_track
+  always_distraction
+}
+
+enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  ENDED_EARLY
+  CANCELLED
+}
+
+enum BlockKind {
+  work
+  break
+}
+
+enum SessionDomainKind {
+  blocked
+  relevant
+}
+
+enum ActivityLabel {
+  PLANNED
+  UNPLANNED_RELEVANT
+  DISTRACTION
+  BLOCKED
+  UNCERTAIN
+}
+
+enum LabelSource {
+  session_list
+  user_override
+  rule
+  llm
+  ml
+  user_feedback
+}
+
+enum DeviceType {
+  extension
+  collector
+}
+
+enum EmailTokenPurpose {
+  verify
+  reset
+}
+
+// ---------------------------------------------------------------------------
+// Accounts & auth (Milestone 1.1)
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  email           String    @unique @db.Citext
+  passwordHash    String    @map("password_hash")
+  displayName     String    @map("display_name")
+  timezone        String    @default("UTC")
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  settings       UserSettings?
+  emailTokens    EmailToken[]
+  refreshTokens  RefreshToken[]
+  devices        Device[]
+  pairingCodes   PairingCode[]
+  tasks          Task[]
+  domainRules    DomainRule[]
+  sessions       FocusSession[]
+  segments       ActivitySegment[]
+  blockedAttempt BlockedAttempt[]
+  feedback       SegmentFeedback[]
+  dailyStats     UserDailyStats[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model UserSettings {
+  userId                 String   @id @map("user_id") @db.Uuid
+  trackingEnabled        Boolean  @default(true) @map("tracking_enabled")
+  titleCollectionEnabled Boolean  @default(false) @map("title_collection_enabled")
+  widgetEnabled          Boolean  @default(true) @map("widget_enabled")
+  blockDuringBreaks      Boolean  @default(false) @map("block_during_breaks")
+  activityRetentionDays  Int      @default(180) @map("activity_retention_days")
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model EmailToken {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  purpose   EmailTokenPurpose
+  tokenHash String            @unique @map("token_hash")
+  expiresAt DateTime          @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?         @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("email_tokens")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  deviceId     String?   @map("device_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash")
+  familyId     String    @map("family_id") @db.Uuid
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  userAgent    String?   @map("user_agent")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Device {
+  id         String     @id @default(uuid(7)) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  type       DeviceType
+  name       String
+  version    String?
+  scopes     String[]
+  lastSeenAt DateTime?  @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt  DateTime?  @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  presence      SessionPresence[]
+
+  @@index([userId])
+  @@map("devices")
+}
+
+/// One-time pairing codes (moved to Redis in Phase 3).
+model PairingCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @unique @map("code_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pairing_codes")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  event     String
+  ipHash    String?  @map("ip_hash")
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("audit_log")
+}
+
+// ---------------------------------------------------------------------------
+// Tasks & domain lists (Milestone 1.2)
+// ---------------------------------------------------------------------------
+
+model Task {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  title       String
+  notes       String?
+  category    TaskCategory @default(other)
+  status      TaskStatus   @default(todo)
+  estimateMin Int?         @map("estimate_min")
+  dueDate     DateTime?    @map("due_date") @db.Date
+  tags        String[]
+  completedAt DateTime?    @map("completed_at") @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionTasks SessionTask[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("tasks")
+}
+
+model DomainRule {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  host      String
+  list      DomainListType
+  /// '*' = all tasks, or a TaskCategory for relabel "apply to future" overrides.
+  scope     String         @default("*")
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, host, list, scope])
+  @@map("domain_rules")
+}
+
+model DomainCategory {
+  host     String @id
+  category String
+  source   String @default("seed")
+
+  @@map("domain_categories")
+}
+
+// ---------------------------------------------------------------------------
+// Focus sessions (Milestone 1.2) — overlap prevented by an exclusion constraint
+// added in the migration SQL.
+// ---------------------------------------------------------------------------
+
+model FocusSession {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  userId            String        @map("user_id") @db.Uuid
+  status            SessionStatus
+  startsAt          DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt            DateTime      @map("ends_at") @db.Timestamptz(3)
+  startedAt         DateTime?     @map("started_at") @db.Timestamptz(3)
+  endedAt           DateTime?     @map("ended_at") @db.Timestamptz(3)
+  endReason         String?       @map("end_reason")
+  planId            String?       @map("plan_id") @db.Uuid
+  blockDuringBreaks Boolean       @default(false) @map("block_during_breaks")
+  version           Int           @default(1)
+  finalizedAt       DateTime?     @map("finalized_at") @db.Timestamptz(3)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blocks         FocusSessionBlock[]
+  tasks          SessionTask[]
+  domains        SessionDomain[]
+  presence       SessionPresence[]
+  segments       ActivitySegment[]
+  blockedAttempt BlockedAttempt[]
+  report         SessionReport?
+
+  @@index([userId, startsAt(sort: Desc)])
+  @@index([status, endsAt])
+  @@map("focus_sessions")
+}
+
+model FocusSessionBlock {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  sessionId String    @map("session_id") @db.Uuid
+  idx       Int
+  kind      BlockKind
+  startsAt  DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt    DateTime  @map("ends_at") @db.Timestamptz(3)
+  title     String?
+
+  session  FocusSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  segments ActivitySegment[]
+  tasks    SessionTask[]
+
+  @@unique([sessionId, idx])
+  @@map("focus_session_blocks")
+}
+
+model SessionTask {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  sessionId    String       @map("session_id") @db.Uuid
+  taskId       String?      @map("task_id") @db.Uuid
+  taskTitle    String       @map("task_title")
+  taskCategory TaskCategory @map("task_category")
+  blockId      String?      @map("block_id") @db.Uuid
+  completedAt  DateTime?    @map("completed_at") @db.Timestamptz(3)
+
+  session FocusSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  task    Task?              @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  block   FocusSessionBlock? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, taskId])
+  @@map("session_tasks")
+}
+
+model SessionDomain {
+  sessionId       String            @map("session_id") @db.Uuid
+  host            String
+  kind            SessionDomainKind
+  addedMidSession Boolean           @default(false) @map("added_mid_session")
+  removedAt       DateTime?         @map("removed_at") @db.Timestamptz(3)
+
+  session FocusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, host, kind])
+  @@map("session_domains")
+}
+
+model SessionPresence {
+  sessionId   String   @map("session_id") @db.Uuid
+  deviceId    String   @map("device_id") @db.Uuid
+  firstSeenAt DateTime @map("first_seen_at") @db.Timestamptz(3)
+  lastSeenAt  DateTime @map("last_seen_at") @db.Timestamptz(3)
+  /// Seconds of heartbeat gaps > 90s while the session was active.
+  offlineSec  Int      @default(0) @map("offline_sec")
+
+  session FocusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  device  Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, deviceId])
+  @@map("session_presence")
+}
+
+// ---------------------------------------------------------------------------
+// Activity (Milestone 1.5)
+// ---------------------------------------------------------------------------
+
+model ActivitySegment {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  clientEventId     String         @map("client_event_id") @db.Uuid
+  /// A client segment crossing work-block boundaries is split into parts.
+  part              Int            @default(0)
+  userId            String         @map("user_id") @db.Uuid
+  sessionId         String         @map("session_id") @db.Uuid
+  deviceId          String?        @map("device_id") @db.Uuid
+  blockId           String?        @map("block_id") @db.Uuid
+  host              String
+  registrableDomain String         @map("registrable_domain")
+  title             String?
+  startedAt         DateTime       @map("started_at") @db.Timestamptz(3)
+  endedAt           DateTime       @map("ended_at") @db.Timestamptz(3)
+  durationSec       Int            @map("duration_sec")
+  label             ActivityLabel?
+  confidence        Float?
+  labelSource       LabelSource?   @map("label_source")
+  reasonCode        String?        @map("reason_code")
+  explanation       String?
+  classifierVersion String?        @map("classifier_version")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session  FocusSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  block    FocusSessionBlock? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  feedback SegmentFeedback[]
+
+  @@unique([clientEventId, part])
+  @@index([sessionId, startedAt])
+  @@index([userId, startedAt])
+  @@map("activity_segments")
+}
+
+model BlockedAttempt {
+  id          String   @id @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  deviceId    String?  @map("device_id") @db.Uuid
+  host        String
+  attemptedAt DateTime @map("attempted_at") @db.Timestamptz(3)
+  /// True when the same domain was already blocked within 10s (reload loops).
+  deduped     Boolean  @default(false)
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session FocusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, attemptedAt])
+  @@index([userId, attemptedAt])
+  @@map("blocked_attempts")
+}
+
+model SegmentFeedback {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  segmentId     String         @map("segment_id") @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  oldLabel      ActivityLabel? @map("old_label")
+  newLabel      ActivityLabel  @map("new_label")
+  applyToFuture Boolean        @default(false) @map("apply_to_future")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  segment ActivitySegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([segmentId])
+  @@map("segment_feedback")
+}
+
+// ---------------------------------------------------------------------------
+// Reports & analytics (Milestone 1.6)
+// ---------------------------------------------------------------------------
+
+model SessionReport {
+  sessionId   String   @id @map("session_id") @db.Uuid
+  version     Int      @default(1)
+  metrics     Json
+  domains     Json
+  generatedAt DateTime @map("generated_at") @db.Timestamptz(3)
+
+  session FocusSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("session_reports")
+}
+
+model UserDailyStats {
+  userId               String   @map("user_id") @db.Uuid
+  localDate            DateTime @map("local_date") @db.Date
+  focusSec             Int      @default(0) @map("focus_sec")
+  sessionsStarted      Int      @default(0) @map("sessions_started")
+  sessionsCompleted    Int      @default(0) @map("sessions_completed")
+  plannedSec           Int      @default(0) @map("planned_sec")
+  relevantSec          Int      @default(0) @map("relevant_sec")
+  distractionSec       Int      @default(0) @map("distraction_sec")
+  uncertainSec         Int      @default(0) @map("uncertain_sec")
+  outsideBrowserSec    Int      @default(0) @map("outside_browser_sec")
+  blockedAttempts      Int      @default(0) @map("blocked_attempts")
+  switches             Int      @default(0)
+  tasksCompleted       Int      @default(0) @map("tasks_completed")
+  tasksPlanned         Int      @default(0) @map("tasks_planned")
+  hourlyFocusSec       Int[]    @map("hourly_focus_sec")
+  hourlyProductiveSec  Int[]    @map("hourly_productive_sec")
+  hourlyDistractionSec Int[]    @map("hourly_distraction_sec")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, localDate])
+  @@map("user_daily_stats")
 }

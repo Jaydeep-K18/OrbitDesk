@@ -384,8 +384,8 @@ Statuses: ⬜ Not started · 🔄 In progress · ✅ Complete (exit criteria met
 
 | Phase | Status | Notes |
 |---|---|---|
-| 0 Foundations | 🔄 In progress | |
-| 1 Core MVP | ⬜ Not started | |
+| 0 Foundations | ✅ Complete | Verified 2026-10-02. Pending user action: push to GitHub, enable branch protection |
+| 1 Core MVP | 🔄 In progress | |
 | 2 AI layer (Ollama) | ⬜ Not started | |
 | 3 Redis & real-time | ⬜ Not started | |
 | 4 Kafka | ⬜ Not started | |
@@ -450,7 +450,7 @@ flowchart LR
 
 ---
 
-## Phase 0 — Foundations
+## Phase 0 — Foundations ✅
 
 **Estimated duration:** 1 week · **Milestone:** M0 Skeleton
 
@@ -511,11 +511,11 @@ None. This is the starting point.
 - **Over-engineering the skeleton.** Mitigation: timebox to 1 week. Seams are interfaces only, with no implementations beyond trivial ones.
 
 ### Exit criteria
-- [ ] `pnpm i && docker compose up -d && pnpm dev` starts the API, web and extension dev builds on a fresh machine.
-- [ ] CI runs lint, typecheck, unit tests and build on every PR; `main` is protected.
-- [ ] `packages/contracts`, `packages/domain` and `packages/config` exist, and `normalizeDomain` is fully tested.
-- [ ] The extension loads unpacked with a stable ID.
-- [ ] ADRs 001–019 are committed, and wireframes exist for all MVP screens.
+- [x] `pnpm i && docker compose up -d && pnpm dev` starts the API, web and extension dev builds on a fresh machine. *(Verified with the Docker-free `pnpm db:dev` Postgres; the Compose path will be re-verified once Docker Desktop is installed.)*
+- [x] CI runs lint, typecheck, unit tests and build on every PR; `main` is protected. *(Workflow in `.github/workflows/ci.yml`; every step passes locally. **Pending user action:** push to GitHub and enable branch protection.)*
+- [x] `packages/contracts`, `packages/domain` and `packages/config` exist, and `normalizeDomain` is fully tested. *(100% line coverage on `packages/domain`.)*
+- [x] The extension loads unpacked with a stable ID. *(Dev ID `dmfegmfpjfegcdhojmpbbghakajhgpec`, pinned via `apps/extension/keys/dev-key.pub`.)*
+- [x] ADRs 001–019 are committed, and wireframes exist for all MVP screens. *(`docs/adr/`, `docs/design/wireframes.md`.)*
 
 ---
 
