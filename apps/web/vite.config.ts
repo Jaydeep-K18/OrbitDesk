@@ -8,12 +8,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: {
-    port: 5173,
+    port: Number(process.env.FG_WEB_PORT ?? 5173),
     strictPort: true,
     proxy: {
       // Same-origin in dev too (ADR-019): the SPA calls /api, Vite forwards to the API.
-      '/api': 'http://localhost:4000',
-      '/socket.io': { target: 'http://localhost:4000', ws: true },
+      '/api': process.env.FG_API_PROXY ?? 'http://localhost:4000',
+      '/socket.io': { target: process.env.FG_API_PROXY ?? 'http://localhost:4000', ws: true },
     },
   },
   test: {

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FocusGuard settings</title>
+    <meta name="manifest.open_in_tab" content="true" />
+    <link rel="stylesheet" href="../blocked/style.css" />
+    <style>
+      .card { text-align: left; }
+      form { display: flex; gap: 8px; margin-top: 12px; }
+      input { flex: 1; font: inherit; font-size: 18px; letter-spacing: 0.15em; text-transform: uppercase; padding: 8px 10px; border-radius: 8px; border: 1px solid #c8ccd8; background: transparent; color: inherit; }
+      .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+      .ok { background: #dcfce7; color: #166534; }
+      .no { background: #fee2e2; color: #991b1b; }
+      button.secondary { background: transparent; color: var(--fg); border: 1px solid #c8ccd8; }
+      #error { color: #dc2626; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>FocusGuard</h1>
+      <p>Status: <span id="status" class="status">checking…</span></p>
+      <section id="pair-section">
+        <h2>Connect to your account</h2>
+        <p class="muted">
+          Open FocusGuard → Settings → Devices → <strong>Connect extension</strong>. It usually connects automatically;
+          if not, type the 8-character code here.
+        </p>
+        <form id="pair-form">
+          <input id="code" aria-label="Pairing code" placeholder="ABCD-EFGH" maxlength="9" autocomplete="off" required />
+          <button type="submit">Connect</button>
+        </form>
+        <p id="error" role="alert"></p>
+      </section>
+      <section id="paired-section" hidden>
+        <h2>Connected</h2>
+        <p class="muted" id="queue"></p>
+        <div class="actions" style="text-align:left">
+          <button id="sync" type="button">Sync now</button>
+          <button id="unpair" type="button" class="secondary">Disconnect</button>
+        </div>
+      </section>
+      <h2>Privacy</h2>
+      <p class="muted small">
+        During focus sessions FocusGuard records which sites you visit and for how long, never page contents, form
+        inputs or messages. Page titles are collected only if you enable them in the dashboard, and never on banking,
+        health, email or messaging sites. Blocking also works in incognito if you allow it on the extension's details page.
+      </p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

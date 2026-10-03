@@ -1,10 +1,11 @@
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 import {
   BarChart3,
   CalendarClock,
   Globe,
   LayoutDashboard,
   ListTodo,
+  LogOut,
   Monitor,
   Moon,
   Settings,
@@ -12,7 +13,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
+import { useActiveSession } from '@/lib/queries';
+import { useCountdown } from '@/hooks/use-countdown';
 import { Button } from '@/components/ui/button';
+import { CommandPalette } from '@/components/command-palette';
 
 const NAV = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -43,9 +48,36 @@ function ThemeToggle() {
   );
 }
 
+/** Live "focusing" pill in the header while a session runs. */
+function SessionPill() {
+  const { data } = useActiveSession();
+  const session = data?.session;
+  const { label } = useCountdown(
+    session?.status === 'ACTIVE' ? session.endsAt : null,
+    data?.serverNow,
+  );
+  if (!session || session.status !== 'ACTIVE') return null;
+  return (
+    <Link
+      to="/session"
+      className="flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-sm font-medium text-accent-foreground"
+    >
+      <span className="size-2 animate-pulse rounded-full bg-planned" aria-hidden />
+      Focusing <span className="tabular-nums">{label}</span>
+    </Link>
+  );
+}
+
 export function AppLayout() {
+  const { user, logout } = useAuth();
   return (
     <div className="flex min-h-screen">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-card focus:px-3 focus:py-2"
+      >
+        Skip to content
+      </a>
       <aside className="hidden w-60 shrink-0 flex-col border-r bg-card md:flex">
         <div className="flex h-14 items-center gap-2 px-5">
           <img src="/favicon.svg" alt="" className="size-7" />
@@ -69,16 +101,33 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="border-t p-3 text-xs text-muted-foreground">
+          Press <kbd className="rounded border px-1">Ctrl</kbd>+
+          <kbd className="rounded border px-1">K</kbd> for commands
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b bg-card/60 px-4 backdrop-blur md:px-8">
+        <header className="flex h-14 items-center justify-between gap-2 border-b bg-card/60 px-4 backdrop-blur md:px-8">
           <span className="font-semibold md:hidden">FocusGuard</span>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
+            <SessionPill />
             <ThemeToggle />
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {user?.displayName}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Log out"
+              title="Log out"
+              onClick={() => void logout()}
+            >
+              <LogOut />
+            </Button>
           </div>
         </header>
-        <main id="main" className="flex-1 p-4 md:p-8">
+        <main id="main" tabIndex={-1} className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>
         <nav
@@ -103,6 +152,7 @@ export function AppLayout() {
           ))}
         </nav>
       </div>
+      <CommandPalette />
     </div>
   );
 }

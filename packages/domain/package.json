@@ -5,7 +5,12 @@
   "type": "module",
   "description": "Pure FocusGuard domain logic: domain normalization, classification rules, metrics, time math. No I/O.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./sessions": "./src/sessions.ts",
+    "./clock": "./src/clock.ts",
+    "./display": "./src/display.ts",
+    "./ids": "./src/ids.ts",
+    "./domains": "./src/domains.ts"
   },
   "scripts": {
     "lint": "eslint src tests",

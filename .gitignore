@@ -48,3 +48,4 @@ Thumbs.db
 # playwright
 test-results/
 playwright-report/
+.output-e2e/

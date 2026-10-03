@@ -13,8 +13,8 @@
 
 ---
 
-## Table of Contents
 
+## Table of Contents
 1. [Purpose & How to Use This Roadmap](#1-purpose--how-to-use-this-roadmap)
 2. [Guiding Principles](#2-guiding-principles)
 3. [Architecture Decision Summary](#3-architecture-decision-summary)

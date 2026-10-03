@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocked by FocusGuard</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="card" aria-labelledby="title">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#4f46e5" />
+        <circle cx="16" cy="16" r="8" fill="none" stroke="#fff" stroke-width="3" />
+        <circle cx="16" cy="16" r="3" fill="#fff" />
+      </svg>
+      <h1 id="title"><span id="domain">This site</span> is blocked</h1>
+      <p id="until" class="muted">You're in a focus session.</p>
+      <section id="tasks-section" hidden>
+        <h2>Current tasks</h2>
+        <ul id="tasks"></ul>
+      </section>
+      <div class="actions">
+        <button id="back" type="button">Back to work</button>
+      </div>
+      <p class="small muted">
+        Need to stop? End the session from your <a id="dashboard" href="#">FocusGuard dashboard</a>.
+      </p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

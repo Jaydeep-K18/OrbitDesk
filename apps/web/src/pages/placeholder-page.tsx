@@ -1,24 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-/** Phase 0 routing shell page. Each route is replaced by its real page in Phase 1. */
-export function PlaceholderPage({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Coming in Phase 1</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          This screen is part of the routing shell. Its wireframe lives in
-          docs/design/wireframes.md.
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 export function NotFoundPage() {
   return (
     <div className="mx-auto max-w-md py-24 text-center">

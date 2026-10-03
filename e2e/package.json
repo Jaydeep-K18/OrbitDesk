@@ -1,0 +1,19 @@
+{
+  "name": "@focusguard/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:extension": "node scripts/build-extension.mjs",
+    "test:e2e": "pnpm build:extension && playwright test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@focusguard/config": "workspace:*",
+    "@playwright/test": "^1.55.0",
+    "@types/chrome": "^0.1.12",
+    "@types/node": "^20.19.0",
+    "@types/pg": "^8.15.5",
+    "pg": "^8.16.3"
+  }
+}
